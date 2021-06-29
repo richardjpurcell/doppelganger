@@ -1,19 +1,16 @@
 /*
- Copyright 2017 BIG VISION LLC ALL RIGHTS RESERVED
-
- This program is distributed WITHOUT ANY WARRANTY to the
- students of the online course titled
-
- "Computer Visionfor Faces" by Satya Mallick
-
- for personal non-commercial use.
-
- Sharing this code is strictly prohibited without written
- permission from Big Vision LLC.
-
- For licensing and other inquiries, please email
- spmallick@bigvisionllc.com
-
+ * File:      doppelgangerRecognize.cpp
+ * Author:    Richard Purcell
+ * Date:      2021-06-28
+ * Version:   1.0
+ * Purpose:   Find nearest celebrity match for a user submitted image.
+ * Usage:     $ ./doppelgangerRecognize <path to image>
+ * Usage:     ie: $ ./doppelgangerRecognize ../images/sofia-solares.jpg
+ * Notes:     Created for OpenCV's Computer Vision 2 Project 2.
+ *            This file is heavily based on testDlibFaceRecImage.cpp,
+ *            provided for Computer Vision 2, week 4.
+ *            Threshold is currently hard coded at 0.6
+ *            
  */
 
  #include <iostream>
@@ -62,7 +59,7 @@ using namespace cv;
 using namespace dlib;
 using namespace std;
 
-#define THRESHOLD 0.5
+#define THRESHOLD 0.6
 
 // ----------------------------------------------------------------------------------------
 
@@ -289,7 +286,9 @@ int main(int argc, char *argv[]) {
     nearestNeighbor(faceDescriptorQuery, faceDescriptors, faceLabels, label, minDistance);
     // Name of recognized person from map
     name = labelNameMap[label];
-    
+
+    cout << "Time taken = " << ((double)cv::getTickCount() - t)/cv::getTickFrequency() << endl;
+   
     Dict celeb = generateLabelMap();
     int size = celeb.size();
     std::cout<<"celebrities size:: "<<size<<std::endl;
@@ -311,15 +310,7 @@ int main(int argc, char *argv[]) {
 
     // Draw a rectangle for detected face
     Point2d p1 = Point2d(faceRects[i].left(), faceRects[i].top());
-    Point2d p2 = Point2d(faceRects[i].right(), faceRects[i].bottom());
-    cv::rectangle(im, p1, p2, Scalar(0, 0, 255), 1, LINE_8);
-
-    // Draw circle for face recognition
-    Point2d center = Point((faceRects[i].left() + faceRects[i].right())/2.0,
-    (faceRects[i].top() + faceRects[i].bottom())/2.0 );
-    int radius = static_cast<int> ((faceRects[i].bottom() - faceRects[i].top())/2.0);
-    cv::circle(im, center, radius, Scalar(0, 255, 0), 1, LINE_8);
-
+    
     // Write text on image specifying identified person and minimum distance
     stringstream stream;
     stream << nameText << " ";
@@ -327,8 +318,6 @@ int main(int argc, char *argv[]) {
     string text = stream.str(); // name + " " + std::to_string(minDistance);
     cv::putText(im, text, p1, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
   }
-
-  
 
   // Show result
   cv::imshow("webcam", im);

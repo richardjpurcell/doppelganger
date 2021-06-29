@@ -1,19 +1,15 @@
 /*
- Copyright 2017 BIG VISION LLC ALL RIGHTS RESERVED
-
- This program is distributed WITHOUT ANY WARRANTY to the
- students of the online course titled
-
- "Computer Visionfor Faces" by Satya Mallick
-
- for personal non-commercial use.
-
- Sharing this code is strictly prohibited without written
- permission from Big Vision LLC.
-
- For licensing and other inquiries, please email
- spmallick@bigvisionllc.com
-
+ * File:      doppelgangerEnroll.cpp
+ * Author:    Richard Purcell
+ * Date:      2021-06-28
+ * Version:   1.0
+ * Purpose:   Enroll a set of images and output a set of descriptors.
+ * Usage:     $ ./doppelgangerEnroll
+ * Notes:     Created for OpenCV's Computer Vision 2 Project 2.
+ *            This file is heavily based on enrollDlibFaceRec.cpp,
+ *            provided for Computer Vision 2, week 4.
+ *            This program expects images in "../images/celeb_mini"
+ *            
  */
 
 #include <iostream>
@@ -165,7 +161,6 @@ int main() {
   // data is organized assuming following structure
   // faces folder has subfolders.
   // each subfolder has images of a person
-  //string faceDatasetFolder = "../data/images/faces";
   string faceDatasetFolder = "../images/celeb_mini";
   std::vector<string> subfolders, fileNames, symlinkNames;
   // fileNames and symlinkNames are useless here

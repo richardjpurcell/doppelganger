@@ -17,6 +17,6 @@ MACRO(add_target name)
   TARGET_LINK_LIBRARIES(${name} ${OpenCV_LIBS} dlib::dlib)
 ENDMACRO()
 
-#add_target(doppelgangerEnroll)
+add_target(doppelgangerEnroll)
 add_target(doppelgangerRecognize)
 
