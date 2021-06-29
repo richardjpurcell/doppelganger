@@ -36,6 +36,8 @@
  #include <dlib/image_processing.h>
  #include <dlib/image_processing/frontal_face_detector.h>
 
+ #include "labelData.h"
+
 // dirent.h is pre-included with *nix like systems
 // but not for Windows. So we are trying to include
 // this header files based on Operating System
@@ -287,6 +289,23 @@ int main(int argc, char *argv[]) {
     nearestNeighbor(faceDescriptorQuery, faceDescriptors, faceLabels, label, minDistance);
     // Name of recognized person from map
     name = labelNameMap[label];
+    
+    Dict celeb = generateLabelMap();
+    int size = celeb.size();
+    std::cout<<"celebrities size:: "<<size<<std::endl;
+
+    std::string nameText = "undefined";
+
+    if(celeb.find(name) == celeb.end())
+    {
+        std::cout<<"Doppelganger not found."<<std::endl;
+    }
+    else
+    {
+        nameText = celeb.find(name)->second;
+        std::cout<<name<<" "<<nameText<<std::endl;
+    }
+
 
     cout << "Time taken = " << ((double)cv::getTickCount() - t)/cv::getTickFrequency() << endl;
 
@@ -303,11 +322,13 @@ int main(int argc, char *argv[]) {
 
     // Write text on image specifying identified person and minimum distance
     stringstream stream;
-    stream << name << " ";
+    stream << nameText << " ";
     stream << fixed << setprecision(4) << minDistance;
     string text = stream.str(); // name + " " + std::to_string(minDistance);
     cv::putText(im, text, p1, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
   }
+
+  
 
   // Show result
   cv::imshow("webcam", im);

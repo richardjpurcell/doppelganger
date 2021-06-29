@@ -11,11 +11,12 @@ find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS})
 include(../dlib/dlib/cmake)
 
-MACRO(add_example name)
-  ADD_EXECUTABLE(${name} ${name}.cpp)
+
+MACRO(add_target name)
+  ADD_EXECUTABLE(${name} ${name}.cpp labelData.cpp)
   TARGET_LINK_LIBRARIES(${name} ${OpenCV_LIBS} dlib::dlib)
 ENDMACRO()
 
-add_example(doppelgangerEnroll)
-add_example(doppelgangerRecognize)
+#add_target(doppelgangerEnroll)
+add_target(doppelgangerRecognize)
 
