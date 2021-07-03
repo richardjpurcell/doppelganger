@@ -20,6 +20,11 @@
  #include <map>
  #include <iomanip> // setprecision
  #include <sstream> // stringstream
+#include <string>
+#include <string.h>
+#include <vector>
+#include <dirent.h>
+#include <algorithm>
 
  #include <opencv2/core.hpp>
  #include <opencv2/videoio.hpp>
@@ -96,6 +101,35 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
                             input_rgb_image_sized<150>
                             >>>>>>>>>>>>;
 // ----------------------------------------------------------------------------------------
+
+// Reads files in a directory
+void listdir(string dirName, std::vector<string>& fileNames) 
+{
+  DIR *dir;
+  struct dirent *ent;
+
+  if ((dir = opendir(dirName.c_str())) != NULL) 
+  {
+    /* print all the files and directories within directory */
+    while ((ent = readdir(dir)) != NULL) {
+      // ignore . and ..
+      if((strcmp(ent->d_name,".") == 0) || (strcmp(ent->d_name,"..") == 0)) {
+      continue;
+      }
+      string temp_name = ent->d_name;
+      // Read more about file types identified by dirent.h here
+      // https://www.gnu.org/software/libc/manual/html_node/Directory-Entries.html
+      switch (ent->d_type) {
+        case DT_REG:
+          fileNames.push_back(temp_name);
+          break;
+      }
+    }
+    // sort all the files
+    sort(fileNames.begin(), fileNames.end());
+    closedir(dir);
+  }
+}
 
 // function to print a vector
 template<typename T>
@@ -262,7 +296,9 @@ int main(int argc, char *argv[]) {
   // detect faces in image
   std::vector<dlib::rectangle> faceRects = faceDetector(imDlib);
   cout << faceRects.size() << " Faces Detected " << endl;
-  string name;
+  std::string name;
+  std::string nameText;
+  float minDistance;
   // Now process each face we found
   for (int i = 0; i < faceRects.size(); i++) {
 
@@ -282,7 +318,7 @@ int main(int argc, char *argv[]) {
 
     // Find closest face enrolled to face found in frame
     int label;
-    float minDistance;
+    
     nearestNeighbor(faceDescriptorQuery, faceDescriptors, faceLabels, label, minDistance);
     // Name of recognized person from map
     name = labelNameMap[label];
@@ -293,7 +329,7 @@ int main(int argc, char *argv[]) {
     int size = celeb.size();
     std::cout<<"celebrities size:: "<<size<<std::endl;
 
-    std::string nameText = "undefined";
+    nameText = "undefined";
 
     if(celeb.find(name) == celeb.end())
     {
@@ -310,18 +346,40 @@ int main(int argc, char *argv[]) {
 
     // Draw a rectangle for detected face
     Point2d p1 = Point2d(faceRects[i].left(), faceRects[i].top());
+    Point2d textOrigin = Point2d(10, 20);
     
     // Write text on image specifying identified person and minimum distance
     stringstream stream;
     stream << nameText << " ";
     stream << fixed << setprecision(4) << minDistance;
-    string text = stream.str(); // name + " " + std::to_string(minDistance);
-    cv::putText(im, text, p1, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
+    //string text = stream.str(); // name + " " + std::to_string(minDistance);
+    string text = "original";
+    //cv::putText(im, text, textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
+    cv::putText(im, text, textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
   }
 
+  //find image that of match
+  string faceDatasetFolder = "../images/celeb_mini/";
+  string matchDatasetFolder = faceDatasetFolder + name + "/";
+  std::vector<string> fileNames;
+
+  listdir(matchDatasetFolder, fileNames);
+  string matchImage = fileNames.front();
+  
+  string matchImagePath = matchDatasetFolder + matchImage;
+  cout<< "path to image: "<< matchImagePath << endl;
+  Mat imMatch = cv::imread(matchImagePath, cv::IMREAD_COLOR);
+  Point2d textOrigin = Point2d(10, 20);
+  Point2d textOrigin2 = Point2d(10, 45);
+  Point2d textOrigin3 = Point2d(10, 70);
+  cv::putText(imMatch, "match", textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255,0,0), 2);
+  cv::putText(imMatch, nameText, textOrigin2, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255,0,0), 2);
+  cv::putText(imMatch, std::to_string(minDistance), textOrigin3, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255,0,0), 2);
+
   // Show result
-  cv::imshow("webcam", im);
-  cv::imwrite(cv::format("output-dlib-%s.jpg",name.c_str()),im);
+  cv::imshow("original", im);
+  cv::imshow("match", imMatch);
+  //cv::imwrite(cv::format("output-dlib-%s.jpg",name.c_str()),im);
   int k = cv::waitKey(0);
 
   cv::destroyAllWindows();
