@@ -274,7 +274,6 @@ int main(int argc, char *argv[]) {
   if (argc > 1) {
     imagePath = argv[1];
   } else {
-    //imagePath = "../data/images/faces/satya_demo.jpg";
     imagePath = "../images/shashikant-pedwal.jpg";
   }
   Mat im = cv::imread(imagePath, cv::IMREAD_COLOR);
@@ -295,68 +294,60 @@ int main(int argc, char *argv[]) {
 
   // detect faces in image
   std::vector<dlib::rectangle> faceRects = faceDetector(imDlib);
-  cout << faceRects.size() << " Faces Detected " << endl;
   std::string name;
   std::string nameText;
   float minDistance;
   // Now process each face we found
-  for (int i = 0; i < faceRects.size(); i++) {
 
-    // Find facial landmarks for each detected face
-    full_object_detection landmarks = landmarkDetector(imDlib, faceRects[i]);
+  // Find facial landmarks for each detected face
+  full_object_detection landmarks = landmarkDetector(imDlib, faceRects[0]);
 
-    // object to hold preProcessed face rectangle cropped from image
-    matrix<rgb_pixel> face_chip;
+  // object to hold preProcessed face rectangle cropped from image
+  matrix<rgb_pixel> face_chip;
 
-    // original face rectangle is warped to 150x150 patch.
-    // Same pre-processing was also performed during training.
-    extract_image_chip(imDlib, get_face_chip_details(landmarks,150,0.25), face_chip);
+  // original face rectangle is warped to 150x150 patch.
+  // Same pre-processing was also performed during training.
+  extract_image_chip(imDlib, get_face_chip_details(landmarks, 150, 0.25), face_chip);
 
-    // Compute face descriptor using neural network defined in Dlib.
-    // It is a 128D vector that describes the face in img identified by shape.
-    matrix<float,0,1> faceDescriptorQuery = net(face_chip);
+  // Compute face descriptor using neural network defined in Dlib.
+  // It is a 128D vector that describes the face in img identified by shape.
+  matrix<float, 0, 1> faceDescriptorQuery = net(face_chip);
 
-    // Find closest face enrolled to face found in frame
-    int label;
-    
-    nearestNeighbor(faceDescriptorQuery, faceDescriptors, faceLabels, label, minDistance);
-    // Name of recognized person from map
-    name = labelNameMap[label];
+  // Find closest face enrolled to face found in frame
+  int label;
 
-    cout << "Time taken = " << ((double)cv::getTickCount() - t)/cv::getTickFrequency() << endl;
-   
-    Dict celeb = generateLabelMap();
-    int size = celeb.size();
-    std::cout<<"celebrities size:: "<<size<<std::endl;
+  nearestNeighbor(faceDescriptorQuery, faceDescriptors, faceLabels, label, minDistance);
+  // Name of recognized person from map
+  name = labelNameMap[label];
 
-    nameText = "undefined";
+  cout << "Time taken = " << ((double)cv::getTickCount() - t) / cv::getTickFrequency() << endl;
 
-    if(celeb.find(name) == celeb.end())
-    {
-        std::cout<<"Doppelganger not found."<<std::endl;
-    }
-    else
-    {
-        nameText = celeb.find(name)->second;
-        std::cout<<name<<" "<<nameText<<std::endl;
-    }
+  Dict celeb = generateLabelMap();
+  int size = celeb.size();
+  std::cout << "celebrities size:: " << size << std::endl;
 
+  nameText = "undefined";
 
-    cout << "Time taken = " << ((double)cv::getTickCount() - t)/cv::getTickFrequency() << endl;
-
-    // Draw a rectangle for detected face
-    Point2d p1 = Point2d(faceRects[i].left(), faceRects[i].top());
-    Point2d textOrigin = Point2d(10, 20);
-    
-    // Write text on image specifying identified person and minimum distance
-    stringstream stream;
-    stream << nameText << " ";
-    stream << fixed << setprecision(4) << minDistance;
-    //string text = stream.str(); // name + " " + std::to_string(minDistance);
-    string text = "original";
-    //cv::putText(im, text, textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
-    cv::putText(im, text, textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
+  if (celeb.find(name) == celeb.end())
+  {
+    std::cout << "Doppelganger not found." << std::endl;
   }
+  else
+  {
+    nameText = celeb.find(name)->second;
+    std::cout << name << " " << nameText << std::endl;
+  }
+
+  // Draw a rectangle for detected face
+  Point2d p1 = Point2d(faceRects[0].left(), faceRects[0].top());
+  Point2d textOrigin = Point2d(10, 20);
+
+  // Write text on image specifying identified person and minimum distance
+  stringstream stream;
+  stream << nameText << " ";
+  stream << fixed << setprecision(4) << minDistance;
+  string text = "original";
+  cv::putText(im, text, textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
 
   //find image that of match
   string faceDatasetFolder = "../images/celeb_mini/";
@@ -367,9 +358,8 @@ int main(int argc, char *argv[]) {
   string matchImage = fileNames.front();
   
   string matchImagePath = matchDatasetFolder + matchImage;
-  cout<< "path to image: "<< matchImagePath << endl;
   Mat imMatch = cv::imread(matchImagePath, cv::IMREAD_COLOR);
-  Point2d textOrigin = Point2d(10, 20);
+  
   Point2d textOrigin2 = Point2d(10, 45);
   Point2d textOrigin3 = Point2d(10, 70);
   cv::putText(imMatch, "match", textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255,0,0), 2);
@@ -379,7 +369,6 @@ int main(int argc, char *argv[]) {
   // Show result
   cv::imshow("original", im);
   cv::imshow("match", imMatch);
-  //cv::imwrite(cv::format("output-dlib-%s.jpg",name.c_str()),im);
   int k = cv::waitKey(0);
 
   cv::destroyAllWindows();
