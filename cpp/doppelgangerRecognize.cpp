@@ -9,56 +9,35 @@
  * Notes:     Created for OpenCV's Computer Vision 2 Project 2.
  *            This file is heavily based on testDlibFaceRecImage.cpp,
  *            provided for Computer Vision 2, week 4.
- *            Threshold is currently hard coded at 0.6
- *            
+ *            Threshold is currently hard coded at 0.6         
  */
 
- #include <iostream>
- #include <fstream>
- #include <sstream>
- #include <math.h>
- #include <map>
- #include <iomanip> // setprecision
- #include <sstream> // stringstream
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <math.h>
+#include <map>
+#include <iomanip> // setprecision
+#include <sstream> // stringstream
 #include <string>
 #include <string.h>
 #include <vector>
 #include <dirent.h>
 #include <algorithm>
 
- #include <opencv2/core.hpp>
- #include <opencv2/videoio.hpp>
- #include <opencv2/highgui.hpp>
- #include <opencv2/imgproc.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
- #include <dlib/string.h>
- #include <dlib/dnn.h>
- #include <dlib/image_io.h>
- #include <dlib/opencv.h>
- #include <dlib/image_processing.h>
- #include <dlib/image_processing/frontal_face_detector.h>
+#include <dlib/string.h>
+#include <dlib/dnn.h>
+#include <dlib/image_io.h>
+#include <dlib/opencv.h>
+#include <dlib/image_processing.h>
+#include <dlib/image_processing/frontal_face_detector.h>
 
- #include "labelData.h"
-
-// dirent.h is pre-included with *nix like systems
-// but not for Windows. So we are trying to include
-// this header files based on Operating System
-#ifdef _WIN32
-  #include "dirent.h"
-#elif __APPLE__
-  #include "TargetConditionals.h"
-#if TARGET_OS_MAC
-  #include <dirent.h>
-#else
-  #error "Not Mac. Find an alternative to dirent"
-#endif
-#elif __linux__
-  #include <dirent.h>
-#elif __unix__ // all unices not caught above
-  #include <dirent.h>
-#else
-  #error "Unknown compiler"
-#endif
+#include "labelData.h"
 
 using namespace cv;
 using namespace dlib;
@@ -67,12 +46,9 @@ using namespace std;
 #define THRESHOLD 0.6
 
 // ----------------------------------------------------------------------------------------
-
-// The next bit of code defines a ResNet network. It's basically copied
-// and pasted from the dnn_imagenet_ex.cpp example, except we replaced the loss
-// layer with loss_metric and made the network somewhat smaller. Go read the introductory
-// dlib DNN examples to learn what all this stuff means.
-//
+// Define a ResNet network.
+// Copied from the dnn_imagenet_ex.cpp example.
+// Loss layer replaced with loss_metric and network made smaller. 
 template <template <int,template<typename>class,int,typename> class block, int N, template<typename>class BN, typename SUBNET>
 using residual = add_prev1<block<N,BN,1,tag1<SUBNET>>>;
 
@@ -102,7 +78,17 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
                             >>>>>>>>>>>>;
 // ----------------------------------------------------------------------------------------
 
-// Reads files in a directory
+/*
+ * Name:         listdir
+ * Purpose:      make a vector of all the files in a directory
+ * Arguments:    dirName, fileNames
+ * Outputs:      none
+ * Modifies:     dirName
+ * Returns:      none
+ * Assumptions:  empty folders are not currently guarded agains't
+ * Bugs:         ?
+ * Notes:        based on samples from Computer Vision II week 4
+ */
 void listdir(string dirName, std::vector<string>& fileNames) 
 {
   DIR *dir;
@@ -110,15 +96,13 @@ void listdir(string dirName, std::vector<string>& fileNames)
 
   if ((dir = opendir(dirName.c_str())) != NULL) 
   {
-    /* print all the files and directories within directory */
+    /* print all the files within directory */
     while ((ent = readdir(dir)) != NULL) {
       // ignore . and ..
       if((strcmp(ent->d_name,".") == 0) || (strcmp(ent->d_name,"..") == 0)) {
       continue;
       }
       string temp_name = ent->d_name;
-      // Read more about file types identified by dirent.h here
-      // https://www.gnu.org/software/libc/manual/html_node/Directory-Entries.html
       switch (ent->d_type) {
         case DT_REG:
           fileNames.push_back(temp_name);
@@ -131,16 +115,17 @@ void listdir(string dirName, std::vector<string>& fileNames)
   }
 }
 
-// function to print a vector
-template<typename T>
-void printVector(std::vector<T>& vec) {
-  for (int i = 0; i < vec.size(); i++) {
-    cout << i << " " << vec[i] << "; ";
-  }
-  cout << endl;
-}
-
-// read names and labels mapping from file
+/*
+ * Name:         readLabelNameMap
+ * Purpose:      Find the name or directory number of closest match
+ * Arguments:    filename, names, labels, labelNameMap
+ * Outputs:      none
+ * Modifies:     labelNameMap
+ * Returns:      none
+ * Assumptions:  none
+ * Bugs:         ?
+ * Notes:        based on samples from Computer Vision II week 4
+ */
 static void readLabelNameMap(const string& filename, std::vector<string>& names, std::vector<int>& labels,
                              std::map<int, string>& labelNameMap, char separator = ';') {
   std::ifstream file(filename.c_str(), ifstream::in);
@@ -168,7 +153,17 @@ static void readLabelNameMap(const string& filename, std::vector<string>& names,
   }
 }
 
-// read descriptors saved on disk
+/*
+ * Name:         readLabelNameMap
+ * Purpose:      read descriptor file generated by ./doppelgangerEnroll
+ * Arguments:    filename, faceLabels, faceDescriptors
+ * Outputs:      none
+ * Modifies:     faceLabels, faceDescriptors
+ * Returns:      none
+ * Assumptions:  none
+ * Bugs:         ?
+ * Notes:        based on samples from Computer Vision II week 4
+ */
 static void readDescriptors(const string& filename, std::vector<int>& faceLabels, std::vector<matrix<float,0,1>>& faceDescriptors, char separator = ';') {
   std::ifstream file(filename.c_str(), ifstream::in);
   if (!file) {
@@ -210,8 +205,17 @@ static void readDescriptors(const string& filename, std::vector<int>& faceLabels
   }
 }
 
-// find nearest face descriptor from vector of enrolled faceDescriptor
-// to a query face descriptor
+/*
+ * Name:         nearestneighbor
+ * Purpose:      find nearest descriptor from vector of enrolled faceDescriptors
+ * Arguments:    faceDescriptorQuery, faceDescriptors, faceLabels, label, minDistance
+ * Outputs:      none
+ * Modifies:     label
+ * Returns:      none
+ * Assumptions:  none
+ * Bugs:         ?
+ * Notes:        based on samples from Computer Vision II week 4
+ */
 void nearestNeighbor(dlib::matrix<float, 0, 1>& faceDescriptorQuery,
                     std::vector<dlib::matrix<float, 0, 1>>& faceDescriptors,
                     std::vector<int>& faceLabels, int& label, float& minDistance) {
@@ -269,7 +273,7 @@ int main(int argc, char *argv[]) {
   std::vector<matrix<float,0,1>> faceDescriptors;
   readDescriptors(faceDescriptorFile, faceLabels, faceDescriptors);
 
-  // read query image
+  // read query image (hard coded default: shashikant pedwal)
   string imagePath;
   if (argc > 1) {
     imagePath = argv[1];
@@ -287,19 +291,17 @@ int main(int argc, char *argv[]) {
   Mat imRGB = im.clone();
   cv::cvtColor(im, imRGB, cv::COLOR_BGR2RGB);
 
-
   // convert OpenCV image to Dlib's cv_image object, then to Dlib's matrix object
   // Dlib's dnn module doesn't accept Dlib's cv_image template
   dlib::matrix<dlib::rgb_pixel> imDlib(dlib::mat(dlib::cv_image<dlib::rgb_pixel>(imRGB)));
 
-  // detect faces in image
+  // detect face in image
   std::vector<dlib::rectangle> faceRects = faceDetector(imDlib);
   std::string name;
   std::string nameText;
   float minDistance;
-  // Now process each face we found
 
-  // Find facial landmarks for each detected face
+  // Find facial landmarks for detected face
   full_object_detection landmarks = landmarkDetector(imDlib, faceRects[0]);
 
   // object to hold preProcessed face rectangle cropped from image
@@ -322,9 +324,12 @@ int main(int argc, char *argv[]) {
 
   cout << "Time taken = " << ((double)cv::getTickCount() - t) / cv::getTickFrequency() << endl;
 
+  //the celebrity directories are number coded
+  //so convert number code to name using function generateLabelMap()
   Dict celeb = generateLabelMap();
   int size = celeb.size();
-  std::cout << "celebrities size:: " << size << std::endl;
+  std::cout << "Number of celebrities compared:: " << size << std::endl;
+  std::cout << "Threshold set at: " << THRESHOLD << ::endl;
 
   nameText = "undefined";
 
@@ -335,41 +340,35 @@ int main(int argc, char *argv[]) {
   else
   {
     nameText = celeb.find(name)->second;
-    std::cout << name << " " << nameText << std::endl;
+    std::cout << "directory: " << name << ", celebrity match: " << nameText << std::endl;
+
+    //locate image of best match
+    string faceDatasetFolder = "../images/celeb_mini/";
+    string matchDatasetFolder = faceDatasetFolder + name + "/";
+    std::vector<string> fileNames;
+
+    listdir(matchDatasetFolder, fileNames);
+    string matchImage = fileNames.front();
+
+    string matchImagePath = matchDatasetFolder + matchImage;
+    Mat imMatch = cv::imread(matchImagePath, cv::IMREAD_COLOR);
+    
+    // Write text on images 
+    Point2d textOrigin = Point2d(10, 20);
+    Point2d textOrigin2 = Point2d(10, 45);
+    Point2d textOrigin3 = Point2d(10, 70);
+    cv::putText(im, "original", textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
+    cv::putText(imMatch, "match", textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
+    cv::putText(imMatch, nameText, textOrigin2, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
+    cv::putText(imMatch, std::to_string(minDistance), textOrigin3, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
+
+    // Show result
+    cv::imshow("original", im);
+    cv::imshow("match", imMatch);
+    int k = cv::waitKey(0);
+
+    cv::destroyAllWindows();
   }
 
-  // Draw a rectangle for detected face
-  Point2d p1 = Point2d(faceRects[0].left(), faceRects[0].top());
-  Point2d textOrigin = Point2d(10, 20);
-
-  // Write text on image specifying identified person and minimum distance
-  stringstream stream;
-  stream << nameText << " ";
-  stream << fixed << setprecision(4) << minDistance;
-  string text = "original";
-  cv::putText(im, text, textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255, 0, 0), 2);
-
-  //find image that of match
-  string faceDatasetFolder = "../images/celeb_mini/";
-  string matchDatasetFolder = faceDatasetFolder + name + "/";
-  std::vector<string> fileNames;
-
-  listdir(matchDatasetFolder, fileNames);
-  string matchImage = fileNames.front();
-  
-  string matchImagePath = matchDatasetFolder + matchImage;
-  Mat imMatch = cv::imread(matchImagePath, cv::IMREAD_COLOR);
-  
-  Point2d textOrigin2 = Point2d(10, 45);
-  Point2d textOrigin3 = Point2d(10, 70);
-  cv::putText(imMatch, "match", textOrigin, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255,0,0), 2);
-  cv::putText(imMatch, nameText, textOrigin2, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255,0,0), 2);
-  cv::putText(imMatch, std::to_string(minDistance), textOrigin3, FONT_HERSHEY_SIMPLEX, 0.8, Scalar(255,0,0), 2);
-
-  // Show result
-  cv::imshow("original", im);
-  cv::imshow("match", imMatch);
-  int k = cv::waitKey(0);
-
-  cv::destroyAllWindows();
+  return 0; 
 }
