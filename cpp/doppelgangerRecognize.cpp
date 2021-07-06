@@ -9,7 +9,10 @@
  * Notes:     Created for OpenCV's Computer Vision 2 Project 2.
  *            This file is heavily based on testDlibFaceRecImage.cpp,
  *            provided for Computer Vision 2, week 4.
- *            Threshold is currently hard coded at 0.6         
+ *            Code adapted from "Computer Vision for Faces" by Satya Mallick
+ *            As noted in the original code "for personal non-commercial use".
+ *            Threshold is currently hard coded at 0.6 
+ *            Future modifications would see user able to input threshold.        
  */
 
 #include <iostream>
@@ -83,7 +86,7 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
  * Purpose:      make a vector of all the files in a directory
  * Arguments:    dirName, fileNames
  * Outputs:      none
- * Modifies:     dirName
+ * Modifies:     fileNames
  * Returns:      none
  * Assumptions:  empty folders are not currently guarded agains't
  * Bugs:         ?

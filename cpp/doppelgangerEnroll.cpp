@@ -7,9 +7,13 @@
  * Usage:     $ ./doppelgangerEnroll
  * Notes:     Created for OpenCV's Computer Vision 2 Project 2.
  *            This file is heavily based on enrollDlibFaceRec.cpp,
- *            provided for Computer Vision 2, week 4.
- *            This program expects images in "../images/celeb_mini"
- *            
+ *            provided for Computer Vision 2, week 4. 
+ *            Code adapted from "Computer Vision for Faces" by Satya Mallick
+ *            As noted in the original code "for personal non-commercial use".
+ *            This program expects images in "../images/celeb_mini" (line 162)
+ *            This program is set to filter for only JPEG files (line 209)
+ *            Future modifications would see user able to input image path 
+ *            and image filter types.          
  */
 
 #include <iostream>
@@ -17,6 +21,7 @@
 #include <sstream>
 #include <math.h>
 #include <map>
+#include <dirent.h>
 
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
@@ -30,36 +35,14 @@
 #include <dlib/image_processing.h>
 #include <dlib/image_processing/frontal_face_detector.h>
 
-// dirent.h is pre-included with *nix like systems
-// but not for Windows. So we are trying to include
-// this header files based on Operating System
-#ifdef _WIN32
-  #include "dirent.h"
-#elif __APPLE__
-  #include "TargetConditionals.h"
-#if TARGET_OS_MAC
-  #include <dirent.h>
-#else
-  #error "Not Mac. Find an alternative to dirent"
-#endif
-#elif __linux__
-  #include <dirent.h>
-#elif __unix__ // all unices not caught above
-  #include <dirent.h>
-#else
-  #error "Unknown compiler"
-#endif
-
 using namespace cv;
 using namespace dlib;
 using namespace std;
 
 // ----------------------------------------------------------------------------------------
-// The next bit of code defines a ResNet network. It's basically copied
-// and pasted from the dnn_imagenet_ex.cpp example, except we replaced the loss
-// layer with loss_metric and made the network somewhat smaller.  Go read the introductory
-// dlib DNN examples to learn what all this stuff means.
-//
+// Define a ResNet network.
+// Copied from the dnn_imagenet_ex.cpp example.
+// Loss layer replaced with loss_metric and network made smaller. 
 template <template <int,template<typename>class,int,typename> class block, int N, template<typename>class BN, typename SUBNET>
 using residual = add_prev1<block<N,BN,1,tag1<SUBNET>>>;
 
@@ -89,7 +72,18 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
                             >>>>>>>>>>>>;
 // ----------------------------------------------------------------------------------------
 
-// Reads files, folders and symbolic links in a directory
+/*
+ * Name:         listdir
+ * Purpose:      make vectors of all the directories, files, 
+ *               and symbolic links in a directory
+ * Arguments:    dirName, folderNames, fileNames, symlinkNames
+ * Outputs:      none
+ * Modifies:     folderNames, fileNames, symlinkNames
+ * Returns:      none
+ * Assumptions:  empty folders are not currently guarded agains't
+ * Bugs:         ?
+ * Notes:        based on samples from Computer Vision II week 4
+ */
 void listdir(string dirName, std::vector<string>& folderNames, std::vector<string>& fileNames, std::vector<string>& symlinkNames) {
   DIR *dir;
   struct dirent *ent;
@@ -102,8 +96,6 @@ void listdir(string dirName, std::vector<string>& folderNames, std::vector<strin
       continue;
       }
       string temp_name = ent->d_name;
-      // Read more about file types identified by dirent.h here
-      // https://www.gnu.org/software/libc/manual/html_node/Directory-Entries.html
       switch (ent->d_type) {
         case DT_REG:
           fileNames.push_back(temp_name);
@@ -117,7 +109,6 @@ void listdir(string dirName, std::vector<string>& folderNames, std::vector<strin
         default:
           break;
       }
-      // cout << temp_name << endl;
     }
     // sort all the files
     std::sort(folderNames.begin(), folderNames.end());
@@ -127,7 +118,17 @@ void listdir(string dirName, std::vector<string>& folderNames, std::vector<strin
   }
 }
 
-// filter files having extension ext i.e. jpg
+/*
+ * Name:         filterFiles
+ * Purpose:      filter files having extension ext i.e. jpg
+ * Arguments:    dirName, fileNames, filteredFilePaths, imageLabels, index
+ * Outputs:      none
+ * Modifies:     fileNames, filteredFilePaths, imageLabels
+ * Returns:      none
+ * Assumptions:  empty folders are not currently guarded agains't
+ * Bugs:         ?
+ * Notes:        based on samples from Computer Vision II week 4
+ */
 void filterFiles(string dirPath, std::vector<string>& fileNames, std::vector<string>& filteredFilePaths, string ext, std::vector<int>& imageLabels, int index){
   for(int i = 0; i < fileNames.size(); i++) {
     string fname = fileNames[i];
